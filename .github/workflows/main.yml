@@ -39,7 +39,7 @@ jobs:
 
       - name: Build Unity project
         id: build
-        uses: game-ci/unity-builder@v2.1.2
+        uses: game-ci/unity-builder@v2.2.0
         with:
           versioning: Semantic
           unityVersion: ${{ matrix.unityVersion }}
