@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         unityVersion: 
-          - 2022.2.18f1
+          - auto
         targetPlatform:
           - StandaloneWindows64
     steps:
