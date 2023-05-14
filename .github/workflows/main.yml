@@ -1,0 +1,65 @@
+name: Build Unity project
+
+#on: [push, pull_request]
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  #UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}  
+  UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+  
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        unityVersion: 
+          - 2022.2.18f1
+        targetPlatform:
+          - StandaloneWindows64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+          path: Unity${{ matrix.unityVersion }}
+
+      - name: Cache repository
+        uses: actions/cache@v3
+        with:
+          path: Unity${{ matrix.unityVersion }}/Library
+          key: Library-Unity${{ matrix.unityVersion }}
+          restore-keys: |
+            Library-
+
+      - name: Build Unity project
+        id: build
+        uses: game-ci/unity-builder@v2.1.2
+        with:
+          versioning: Semantic
+          unityVersion: ${{ matrix.unityVersion }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          projectPath: Unity${{ matrix.unityVersion }}
+      
+      - name: Set env variables
+        run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+          echo "ARCHIVE_NAME=${GITHUB_REPOSITORY#*/}-v${{ steps.build.outputs.buildVersion }}" >> $GITHUB_ENV
+          
+      - name: Archive build files
+        id: compress
+        run: |
+          cd "build/${{ matrix.targetPlatform }}"
+          zip "../../${{ env.ARCHIVE_NAME }}.zip" -r .
+                
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ github.event.head_commit.message }}
+          files: ${{ env.ARCHIVE_NAME }}.zip
+          
